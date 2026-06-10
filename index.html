@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Small Data, Big Noise — ACL Findings 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0c0f14;
+      --surface: #12161e;
+      --border: #1e2535;
+      --muted: #3a4560;
+      --text-secondary: #7a8aaa;
+      --text: #d4dbed;
+      --text-bright: #eef2ff;
+      --accent: #4f7fff;
+      --accent-glow: rgba(79,127,255,0.18);
+      --accent-2: #c084fc;
+      --noise-color: #a5b4fc;
+      --green: #4ade80;
+      --green-bg: rgba(74,222,128,0.08);
+      --purple: #c084fc;
+      --purple-bg: rgba(192,132,252,0.08);
+      --amber: #fbbf24;
+      --amber-bg: rgba(251,191,36,0.08);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 28px;
+    }
+
+    /* ── HERO ── */
+    header {
+      position: relative;
+      padding: 80px 0 64px;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute;
+      top: -120px; right: -200px;
+      width: 700px; height: 700px;
+      background: radial-gradient(ellipse at center, rgba(79,127,255,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-bg-2 {
+      position: absolute;
+      top: 40px; left: -260px;
+      width: 500px; height: 500px;
+      background: radial-gradient(ellipse at center, rgba(192,132,252,0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .venue-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(79,127,255,0.1);
+      border: 1px solid rgba(79,127,255,0.25);
+      border-radius: 4px;
+      padding: 5px 14px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+    .venue-badge::before {
+      content: '';
+      display: inline-block;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2rem, 5vw, 3.1rem);
+      font-weight: 400;
+      line-height: 1.15;
+      color: var(--text-bright);
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+    h1 em { font-style: italic; color: var(--noise-color); }
+
+    .subtitle {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+      font-weight: 400;
+    }
+
+    .authors {
+      margin-bottom: 36px;
+      font-size: 0.95rem;
+    }
+    .author-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 4px;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .author { color: var(--text); padding: 2px 0; }
+    .author-sep { color: var(--muted); margin: 0 8px; }
+    .affiliation {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 40px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 11px 22px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.18s ease;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      border: none;
+      font-family: 'Inter', sans-serif;
+    }
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 0 24px rgba(79,127,255,0.25); }
+    .btn-primary:hover { background: #6691ff; box-shadow: 0 0 32px rgba(79,127,255,0.4); transform: translateY(-1px); }
+    .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--text-bright); transform: translateY(-1px); }
+    .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--muted); }
+    .btn-outline:hover { color: var(--text); border-color: var(--text-secondary); transform: translateY(-1px); }
+
+    .divider { height: 1px; background: var(--border); margin: 0; }
+
+    section {
+      padding: 56px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    section:last-of-type { border-bottom: none; }
+
+    .section-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.65rem;
+      font-weight: 400;
+      color: var(--text-bright);
+      margin-bottom: 16px;
+      line-height: 1.25;
+    }
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      letter-spacing: 0.03em;
+    }
+
+    p { color: var(--text-secondary); margin-bottom: 14px; font-size: 0.975rem; }
+    p:last-child { margin-bottom: 0; }
+    p strong { color: var(--text); font-weight: 500; }
+
+    /* ── Abstract ── */
+    .abstract-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 8px;
+      padding: 28px 32px;
+      font-size: 0.965rem;
+      line-height: 1.8;
+      color: var(--text);
+    }
+
+    /* ── Contributions ── */
+    .contributions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin-top: 8px;
+    }
+    .contrib-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 22px 24px;
+      transition: border-color 0.18s;
+    }
+    .contrib-card:hover { border-color: var(--accent); }
+    .contrib-icon { font-size: 1.4rem; margin-bottom: 12px; display: block; }
+    .contrib-title { font-size: 0.88rem; font-weight: 600; color: var(--text-bright); margin-bottom: 7px; font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.02em; }
+    .contrib-desc { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.6; margin: 0; }
+
+    /* ── Tag pills ── */
+    .tag-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 4px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.79rem;
+      font-weight: 500;
+      border: 1px solid;
+    }
+    .tag-blue  { background: rgba(79,127,255,0.08); border-color: rgba(79,127,255,0.25); color: #7da8ff; }
+    .tag-green { background: var(--green-bg); border-color: rgba(74,222,128,0.25); color: var(--green); }
+    .tag-purple{ background: var(--purple-bg); border-color: rgba(192,132,252,0.25); color: var(--purple); }
+    .tag-amber { background: var(--amber-bg); border-color: rgba(251,191,36,0.25); color: var(--amber); }
+    .tag-gray  { background: rgba(122,138,170,0.08); border-color: rgba(122,138,170,0.2); color: var(--text-secondary); }
+
+    .tag-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+
+    /* ── Benchmarks grid ── */
+    .bench-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+    .bench-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px 20px;
+      transition: border-color 0.18s;
+    }
+    .bench-card:hover { border-color: var(--muted); }
+    .bench-name {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.84rem;
+      font-weight: 600;
+      color: var(--text-bright);
+      margin-bottom: 4px;
+    }
+    .bench-task {
+      display: inline-block;
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-family: 'IBM Plex Mono', monospace;
+      margin-bottom: 8px;
+    }
+    .bench-task-cls  { background: rgba(79,127,255,0.1); color: #7da8ff; }
+    .bench-task-gen  { background: rgba(192,132,252,0.1); color: var(--purple); }
+    .bench-task-dom  { background: rgba(251,191,36,0.1); color: var(--amber); }
+    .bench-task-sem  { background: rgba(74,222,128,0.1); color: var(--green); }
+    .bench-desc { font-size: 0.83rem; color: var(--text-secondary); line-height: 1.55; margin: 0; }
+
+    /* ── Results tables ── */
+    .result-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px 28px;
+      margin-bottom: 20px;
+    }
+    .result-block h3 { margin-bottom: 14px; }
+
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+    .result-table th {
+      text-align: left;
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 0.76rem;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+    .result-table td {
+      padding: 7px 10px;
+      border-bottom: 1px solid rgba(30,37,53,0.6);
+      color: var(--text);
+      vertical-align: middle;
+    }
+    .result-table tr:last-child td { border-bottom: none; }
+    .result-table .method-name { color: var(--text-secondary); }
+    .result-table .method-ours { color: var(--accent); font-weight: 600; }
+    .result-table .best { color: var(--green); font-weight: 700; }
+    .result-table .second { text-decoration: underline; }
+    .result-table tr:hover td { background: rgba(79,127,255,0.03); }
+
+    /* ── Method ── */
+    .method-visual {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 28px 32px;
+      margin-top: 20px;
+    }
+    .method-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+    .method-step:last-child { margin-bottom: 0; }
+    .step-num {
+      min-width: 28px; height: 28px;
+      background: rgba(79,127,255,0.12);
+      border: 1px solid rgba(79,127,255,0.3);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; color: var(--accent); font-weight: 600;
+      font-family: 'IBM Plex Mono', monospace;
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .step-title { color: var(--text); font-weight: 600; font-size: 0.88rem; margin-bottom: 4px; font-family: 'IBM Plex Mono', monospace; }
+    .step-desc { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.6; }
+    .step-arrow { color: var(--muted); margin: -8px 0 14px 22px; font-size: 1rem; }
+
+    .variant-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin-top: 24px;
+    }
+    .variant-card {
+      border-radius: 8px;
+      padding: 18px 20px;
+      border: 1px solid;
+    }
+    .variant-sdbn   { background: rgba(79,127,255,0.05); border-color: rgba(79,127,255,0.2); }
+    .variant-sdbnh  { background: rgba(251,191,36,0.05); border-color: rgba(251,191,36,0.2); }
+    .variant-sdbnp  { background: rgba(192,132,252,0.05); border-color: rgba(192,132,252,0.2); }
+    .variant-name { font-family: 'IBM Plex Mono', monospace; font-size: 0.88rem; font-weight: 700; margin-bottom: 8px; }
+    .variant-sdbn  .variant-name { color: #7da8ff; }
+    .variant-sdbnh .variant-name { color: var(--amber); }
+    .variant-sdbnp .variant-name { color: var(--purple); }
+    .variant-desc { font-size: 0.855rem; color: var(--text-secondary); line-height: 1.6; }
+
+    /* ── Big numbers ── */
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 14px;
+      margin-top: 20px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px;
+      text-align: center;
+    }
+    .stat-num {
+      font-family: 'DM Serif Display', serif;
+      font-size: 2rem;
+      color: var(--text-bright);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .stat-num span { color: var(--accent); }
+    .stat-label { font-size: 0.78rem; color: var(--text-secondary); font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.05em; }
+
+    /* ── BibTeX ── */
+    .bibtex-box {
+      position: relative;
+      background: #0a0d12;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.82rem;
+      line-height: 1.75;
+      color: var(--text-secondary);
+      margin-top: 16px;
+      overflow-x: auto;
+    }
+    .bibtex-box .kw  { color: #7dd3fc; }
+    .bibtex-box .field { color: #a5b4fc; }
+    .bibtex-box .val { color: #86efac; }
+    .copy-btn {
+      position: absolute;
+      top: 14px; right: 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 5px 12px;
+      font-size: 0.75rem;
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .copy-btn.copied { border-color: var(--green); color: var(--green); }
+
+    footer {
+      padding: 40px 0;
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+    }
+    footer a { color: var(--text-secondary); text-decoration: none; }
+    footer a:hover { color: var(--accent); }
+
+    @media (max-width: 600px) {
+      header { padding: 60px 0 48px; }
+      .cta-row { gap: 10px; }
+      .btn { padding: 10px 16px; font-size: 0.84rem; }
+      .abstract-box { padding: 20px; }
+      section { padding: 44px 0; }
+      .result-block { padding: 18px; }
+      .result-table { font-size: 0.76rem; }
+      .result-table th, .result-table td { padding: 6px 7px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .venue-badge::before { animation: none; }
+      .btn { transition: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ══ HEADER ══ -->
+  <header>
+    <div class="hero-bg"></div>
+    <div class="hero-bg-2"></div>
+    <div class="venue-badge">ACL Findings 2026</div>
+    <h1>Small Data, <em>Big Noise</em>:<br>Adversarial Training for Robust<br>Parameter-Efficient Fine-Tuning</h1>
+    <p class="subtitle">A unified framework that brings adversarial training to PEFT — improving robustness to word-level, character-level, and domain-shift perturbations under low-resource conditions.</p>
+
+    <div class="authors">
+      <div class="author-line">
+        <span class="author">Eitan Cohen</span>
+        <span class="author-sep">·</span>
+        <span class="author">Idan Simai</span>
+        <span class="author-sep">·</span>
+        <span class="author">Uri Shaham</span>
+      </div>
+      <span class="affiliation">Bar-Ilan University &nbsp;·&nbsp; Ramat Gan, Israel</span>
+    </div>
+
+    <div class="cta-row">
+      <a href="https://arxiv.org/abs/2606.10610" target="_blank" rel="noopener" class="btn btn-primary">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Paper (arXiv)
+      </a>
+      <a href="https://github.com/shaham-lab/SDBN" target="_blank" rel="noopener" class="btn btn-secondary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        Code (GitHub)
+      </a>
+      <a href="#bibtex" class="btn btn-outline">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="14" y2="13"/></svg>
+        Cite
+      </a>
+    </div>
+  </header>
+
+  <div class="divider"></div>
+
+  <!-- ══ ABSTRACT ══ -->
+  <section>
+    <div class="section-label">Abstract</div>
+    <div class="abstract-box">
+      Parameter-Efficient Fine-Tuning (PEFT) has become essential for adapting foundation models to downstream NLP tasks. However, current PEFT methods often struggle with robustness to noise and performance degradation on limited training data. We propose <strong>SDBN (Small Data Big Noise)</strong>, a unified framework that brings adversarial training to PEFT — a combination that remains less studied in the PEFT setting despite its complementary strengths — to enhance model robustness and generalization, outperforming alternative approaches. We also introduce two variants of the method that use discrete uncertainty sets: <strong>SDBN-h</strong>, which enumerates character-level edits and selects worst-case variants using gradients, and <strong>SDBN-p</strong>, which uses LLM-generated variants for robust optimization in generative tasks. Experiments across multiple benchmarks reveal substantial improvements, particularly in low-resource settings and under both word-level and character-level corruptions. This framework addresses the less explored intersection of adversarial training and parameter-efficient adaptation, without introducing additional parameters or only modest computational overhead, making PEFT deployments more reliable in real-world scenarios where data scarcity and linguistic variability often coexist.
+    </div>
+  </section>
+
+  <!-- ══ AT A GLANCE ══ -->
+  <section>
+    <div class="section-label">At a Glance</div>
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-num">3<span>×</span></div><div class="stat-label">SDBN Variants</div></div>
+      <div class="stat-card"><div class="stat-num">7</div><div class="stat-label">Benchmarks</div></div>
+      <div class="stat-card"><div class="stat-num">4</div><div class="stat-label">PEFT Methods</div></div>
+      <div class="stat-card"><div class="stat-num">5</div><div class="stat-label">Baselines</div></div>
+      <div class="stat-card"><div class="stat-num">5</div><div class="stat-label">LLM Backbones</div></div>
+    </div>
+  </section>
+
+  <!-- ══ METHOD ══ -->
+  <section>
+    <div class="section-label">Method</div>
+    <h2>The SDBN Framework</h2>
+    <p>SDBN integrates adversarial training into the PEFT fine-tuning loop by injecting worst-case embedding-space perturbations — forcing adapter parameters to learn locally smooth representations that generalize under noise and domain shift, even when clean training data is scarce.</p>
+
+    <div class="method-visual">
+      <div class="method-step">
+        <div class="step-num">1</div>
+        <div>
+          <div class="step-title">Freeze backbone, initialize PEFT adapter</div>
+          <div class="step-desc">The pretrained backbone (BERT, DeBERTa, LLaMA, Qwen) is frozen. Only the PEFT adapter parameters — LoRA, BitFit, Adapter, or QLoRA — are trainable.</div>
+        </div>
+      </div>
+      <div class="step-arrow">↓</div>
+      <div class="method-step">
+        <div class="step-num">2</div>
+        <div>
+          <div class="step-title">Compute clean embedding &amp; gradient</div>
+          <div class="step-desc">For each batch, compute embeddings <em>e = E(X)</em>, the clean loss <em>L<sub>clean</sub></em>, and its gradient <em>g = ∇<sub>e</sub>L<sub>clean</sub></em>.</div>
+        </div>
+      </div>
+      <div class="step-arrow">↓</div>
+      <div class="method-step">
+        <div class="step-num">3</div>
+        <div>
+          <div class="step-title">Construct worst-case perturbation δ</div>
+          <div class="step-desc">SDBN uses FGSM: <em>δ = ε · sign(g)</em> (ℓ∞ ball, ε = 10⁻⁴), maximizing loss in the direction of steepest ascent. SDBN-h selects the discrete character-variant <em>z*</em> that maximizes ⟨g, E(z)−E(x)⟩. SDBN-p selects the LLM-generated variant with maximum explicit loss.</div>
+        </div>
+      </div>
+      <div class="step-arrow">↓</div>
+      <div class="method-step">
+        <div class="step-num">4</div>
+        <div>
+          <div class="step-title">Update adapter on adversarial loss</div>
+          <div class="step-desc">Trainable PEFT parameters are updated using <em>L<sub>adv</sub> = L(f<sub>θ</sub>(e + δ), Y)</em>. No extra GPU memory; per-batch overhead is ~1.4× vanilla.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="variant-grid" style="margin-top:24px;">
+      <div class="variant-card variant-sdbn">
+        <div class="variant-name">SDBN (ℓ∞)</div>
+        <div class="variant-desc">Continuous embedding-space perturbation via FGSM. Best for word-level noise and domain shift. Used as default across classification tasks.</div>
+      </div>
+      <div class="variant-card variant-sdbnh">
+        <div class="variant-name">SDBN-h</div>
+        <div class="variant-desc">Discrete character-level uncertainty set. Gradient-guided selection over single-character edits (delete, swap, double, phonetic, insert, Cyrillic, case). Addresses tokenization-breaking corruptions that fall outside ℓ∞ ball.</div>
+      </div>
+      <div class="variant-card variant-sdbnp">
+        <div class="variant-name">SDBN-p</div>
+        <div class="variant-desc">LLM-generated adversarial variants (GPT-5.2) as a discrete uncertainty set. Selects worst-case semantic variant by explicit forward pass. Designed for generative tasks (SQuAD, TweetQA).</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ PEFT METHODS & BACKBONES ══ -->
+  <section>
+    <div class="section-label">Setup</div>
+    <h2>PEFT methods &amp; backbones</h2>
+
+    <h3 style="margin-top:0;">PEFT methods evaluated</h3>
+    <div class="tag-grid" style="margin-bottom:28px;">
+      <span class="tag tag-blue"><span class="tag-dot"></span>LoRA</span>
+      <span class="tag tag-blue"><span class="tag-dot"></span>QLoRA</span>
+      <span class="tag tag-blue"><span class="tag-dot"></span>Adapter</span>
+      <span class="tag tag-blue"><span class="tag-dot"></span>BitFit</span>
+    </div>
+
+    <h3>Backbone models</h3>
+    <div class="tag-grid" style="margin-bottom:28px;">
+      <span class="tag tag-green"><span class="tag-dot"></span>BERT-base</span>
+      <span class="tag tag-green"><span class="tag-dot"></span>DeBERTa-v3</span>
+      <span class="tag tag-green"><span class="tag-dot"></span>LLaMA-3.2-1B</span>
+      <span class="tag tag-green"><span class="tag-dot"></span>LLaMA-2-7B</span>
+      <span class="tag tag-green"><span class="tag-dot"></span>Qwen-2.5-7B</span>
+    </div>
+
+    <h3>Baselines compared</h3>
+    <div class="tag-grid">
+      <span class="tag tag-gray"><span class="tag-dot"></span>Vanilla PEFT</span>
+      <span class="tag tag-gray"><span class="tag-dot"></span>NEFTune</span>
+      <span class="tag tag-gray"><span class="tag-dot"></span>EDA</span>
+      <span class="tag tag-gray"><span class="tag-dot"></span>FreeLB</span>
+      <span class="tag tag-gray"><span class="tag-dot"></span>SMART</span>
+    </div>
+  </section>
+
+  <!-- ══ BENCHMARKS ══ -->
+  <section>
+    <div class="section-label">Benchmarks</div>
+    <h2>All evaluated datasets</h2>
+    <p>Seven benchmarks spanning classification, generative QA, semantic relations, and cross-domain generalization — evaluated under clean, word-level, and character-level noise conditions across 5%–100% of training data.</p>
+
+    <div class="bench-grid">
+      <div class="bench-card">
+        <div class="bench-name">Banking77</div>
+        <span class="bench-task bench-task-cls">Classification</span>
+        <p class="bench-desc">Intent classification with 77 banking-domain labels. Primary benchmark for low-resource robustness experiments. DeBERTa-v3, 1,000 samples.</p>
+      </div>
+      <div class="bench-card">
+        <div class="bench-name">TREC</div>
+        <span class="bench-task bench-task-cls">Classification</span>
+        <p class="bench-desc">Question-type classification. Evaluated with BERT-base across 5%–100% training data to measure gains as data shrinks.</p>
+      </div>
+      <div class="bench-card">
+        <div class="bench-name">20NewsGroups</div>
+        <span class="bench-task bench-task-cls">Classification</span>
+        <p class="bench-desc">20-category newsgroup topic classification. Evaluated with BERT-base across variable data regimes.</p>
+      </div>
+      <div class="bench-card">
+        <div class="bench-name">IMDB</div>
+        <span class="bench-task bench-task-cls">Classification</span>
+        <p class="bench-desc">Sentiment classification. Evaluated with BERT-base across all data scales (5%–100%).</p>
+      </div>
+      <div class="bench-card">
+        <div class="bench-name">BLESS</div>
+        <span class="bench-task bench-task-sem">Semantic Relations</span>
+        <p class="bench-desc">Word-pair semantic relation classification. Key benchmark for character-level noise evaluation (SDBN-h). DeBERTa-v3 + LoRA, 1,000 samples.</p>
+      </div>
+      <div class="bench-card">
+        <div class="bench-name">SQuAD</div>
+        <span class="bench-task bench-task-gen">Generative QA</span>
+        <p class="bench-desc">Extractive QA evaluated with LLaMA-3.2-1B (EM/F1) and Qwen-2.5-7B. 200–500 training samples. Primary benchmark for SDBN-p.</p>
+      </div>
+      <div class="bench-card">
+        <div class="bench-name">TweetQA</div>
+        <span class="bench-task bench-task-gen">Generative QA</span>
+        <p class="bench-desc">Social-media QA evaluated with LLaMA-2-7B and LLaMA-3.2-1B (F1). 200 training samples. SDBN-p vs all baselines.</p>
+      </div>
+      <div class="bench-card">
+        <div class="bench-name">ArSarcasm-v2</div>
+        <span class="bench-task bench-task-dom">Domain Shift</span>
+        <p class="bench-desc">Arabic dialect sarcasm/sentiment. Trained on Egyptian Arabic (270 samples), zero-shot transfer to Levantine, Gulf, and Modern Standard Arabic. Tests cross-domain generalization.</p>
+      </div>
+      <div class="bench-card">
+        <div class="bench-name">NLI (Fiction→Telephone)</div>
+        <span class="bench-task bench-task-dom">Domain Shift</span>
+        <p class="bench-desc">Natural Language Inference cross-genre transfer. Trained on NLI Fiction (77 samples), evaluated on NLI Telephone. DeBERTa-v3-large, 20 random seeds.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ RESULTS ══ -->
+  <section>
+    <div class="section-label">Results</div>
+    <h2>Selected results</h2>
+    <p>SDBN consistently outperforms all baselines across settings. Key tables from the paper are reproduced below.</p>
+
+    <!-- Table 2: Generative -->
+    <div class="result-block">
+      <h3>Table 2 — Generative tasks (SDBN-p)</h3>
+      <p style="font-size:0.84rem; margin-bottom:14px;">Top: SQuAD Exact Match, LLaMA-3.2-1B + LoRA, 200 samples. Bottom: TweetQA F1, LLaMA-2-7B + LoRA, 200 samples.</p>
+      <table class="result-table">
+        <thead>
+          <tr><th>Method</th><th>Clean</th><th>Swap-Word</th><th>Homophone</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="method-name">Vanilla</td><td>58.92</td><td>32.44</td><td>47.28</td></tr>
+          <tr><td class="method-name">NEFTune</td><td><span class="second">59.72</span></td><td><span class="second">32.72</span></td><td><span class="second">48.08</span></td></tr>
+          <tr><td class="method-name">EDA</td><td>58.88</td><td>32.44</td><td>47.96</td></tr>
+          <tr><td class="method-name">FreeLB</td><td>57.00</td><td>31.64</td><td>44.04</td></tr>
+          <tr><td class="method-name">SMART</td><td>52.64</td><td>28.44</td><td>40.52</td></tr>
+          <tr><td class="method-ours">SDBN-p</td><td class="best">59.84</td><td class="best">35.08</td><td class="best">52.20</td></tr>
+        </tbody>
+      </table>
+      <div style="height:18px;"></div>
+      <table class="result-table">
+        <thead>
+          <tr><th>Method</th><th>Clean</th><th>Delete-Char</th><th>Delete-Word</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="method-name">Vanilla</td><td>68.09</td><td>51.56</td><td>56.06</td></tr>
+          <tr><td class="method-name">NEFTune</td><td><span class="second">69.34</span></td><td><span class="second">55.13</span></td><td>54.30</td></tr>
+          <tr><td class="method-name">EDA</td><td>70.02</td><td>53.14</td><td>55.04</td></tr>
+          <tr><td class="method-name">FreeLB</td><td>76.57</td><td>60.59</td><td><span class="second">60.79</span></td></tr>
+          <tr><td class="method-name">SMART</td><td>66.71</td><td>49.54</td><td>51.13</td></tr>
+          <tr><td class="method-ours">SDBN-p</td><td class="best">80.81</td><td class="best">65.55</td><td class="best">64.15</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table 1: BLESS char noise -->
+    <div class="result-block">
+      <h3>Table 1 — BLESS: character-level noise (SDBN-h)</h3>
+      <p style="font-size:0.84rem; margin-bottom:14px;">DeBERTa-v3 + LoRA, 1,000 clean samples. SDBN-h yields best robustness on tokenization-breaking types (+4–7%).</p>
+      <table class="result-table">
+        <thead>
+          <tr><th>Method</th><th>Clean</th><th>Delete-Char</th><th>Swap-Char</th><th>Double-Char</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="method-name">Vanilla</td><td>89.81±0.29</td><td>60.67±2.19</td><td>56.82±2.38</td><td>68.51±2.75</td></tr>
+          <tr><td class="method-name">SDBN</td><td class="best">89.83±0.24</td><td>60.84±1.85</td><td>57.22±2.84</td><td>68.66±2.27</td></tr>
+          <tr><td class="method-name">NEFTune</td><td>89.08±0.54</td><td><span class="second">61.19±0.89</span></td><td><span class="second">57.22±0.82</span></td><td><span class="second">69.42±1.29</span></td></tr>
+          <tr><td class="method-ours">SDBN-h</td><td><span class="second">89.61±0.30</span></td><td class="best">65.14±1.19</td><td class="best">62.80±1.47</td><td class="best">72.54±1.05</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table 3: PEFT vs full FT -->
+    <div class="result-block">
+      <h3>Table 3 — SDBN gains: PEFT vs. full fine-tuning (Banking77, DeBERTa-v3)</h3>
+      <p style="font-size:0.84rem; margin-bottom:14px;">Absolute accuracy gain (pp) from adding SDBN. Low-resource subset. Adversarial training is dramatically more effective within PEFT's constrained parameter space.</p>
+      <table class="result-table">
+        <thead>
+          <tr><th>Method</th><th>Clean</th><th>Replace</th><th>Delete</th><th>Swap</th><th>Avg gain</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="method-ours">LoRA</td><td class="best">+23.6</td><td class="best">+18.8</td><td class="best">+18.7</td><td class="best">+17.1</td><td class="best">+19.6</td></tr>
+          <tr><td class="method-name">BitFit</td><td>+16.0</td><td>+11.2</td><td>+12.8</td><td>+11.3</td><td>+12.8</td></tr>
+          <tr><td class="method-name">Adapter</td><td>+13.3</td><td>+9.4</td><td>+9.8</td><td>+6.2</td><td>+9.7</td></tr>
+          <tr><td class="method-name" style="color:var(--muted);">Full FT</td><td style="color:var(--muted);">+1.3</td><td style="color:var(--muted);">+0.9</td><td style="color:var(--muted);">+0.5</td><td style="color:var(--muted);">+0.8</td><td style="color:var(--muted);">+0.9</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table 7 summary: clean data across datasets -->
+    <div class="result-block">
+      <h3>Table 7 — Clean-data accuracy across datasets (BERT-base, 10% training data)</h3>
+      <p style="font-size:0.84rem; margin-bottom:14px;">Excerpt at the most challenging (10%) data regime. SDBN improves every PEFT method on every dataset.</p>
+      <table class="result-table">
+        <thead>
+          <tr><th>Method</th><th>Banking77</th><th>TREC</th><th>20News</th><th>IMDB</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="method-name">Adapter</td><td>78.26</td><td>74.40</td><td>63.16</td><td>84.78</td></tr>
+          <tr><td class="method-ours">SDBN-Adapter</td><td class="best">80.48</td><td class="best">76.76</td><td class="best">63.47</td><td class="best">85.39</td></tr>
+          <tr><td class="method-name">BitFit</td><td>67.45</td><td>65.68</td><td>56.78</td><td>84.01</td></tr>
+          <tr><td class="method-ours">SDBN-BitFit</td><td class="best">70.08</td><td class="best">69.24</td><td class="best">58.92</td><td class="best">84.56</td></tr>
+          <tr><td class="method-name">LoRA</td><td>66.42</td><td>72.20</td><td>60.13</td><td>85.46</td></tr>
+          <tr><td class="method-ours">SDBN-LoRA</td><td class="best">72.86</td><td class="best">74.72</td><td class="best">61.56</td><td class="best">86.00</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Domain shifts -->
+    <div class="result-block">
+      <h3>Domain shift — ArSarcasm-v2 &amp; NLI cross-genre</h3>
+      <p style="font-size:0.84rem; margin-bottom:14px;">Cross-domain generalization without any target-domain training data.</p>
+      <table class="result-table">
+        <thead>
+          <tr><th>Setting</th><th>Vanilla</th><th>NEFTune</th><th>SDBN</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>ArSarcasm — Egyptian (source)</td><td>55.2</td><td>56.3</td><td class="best">59.6</td></tr>
+          <tr><td>ArSarcasm — Levantine (target)</td><td>44.6</td><td>44.9</td><td class="best">57.1</td></tr>
+          <tr><td>ArSarcasm — Gulf (target)</td><td>44.6</td><td>44.9</td><td class="best">47.2</td></tr>
+          <tr><td>ArSarcasm — Modern Standard (target)</td><td>54.1</td><td>54.4</td><td class="best">57.8</td></tr>
+          <tr><td>NLI — Fiction (source)</td><td>51.8</td><td>55.0</td><td class="best">58.9</td></tr>
+          <tr><td>NLI — Telephone (target)</td><td>48.7</td><td>54.6</td><td class="best">51.0</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </section>
+
+  <!-- ══ NOISE TYPES ══ -->
+  <section>
+    <div class="section-label">Evaluation Protocol</div>
+    <h2>Noise types evaluated</h2>
+    <p>Models are tested under 9 distinct perturbation types at inference time, spanning word-level semantic noise, character-level tokenization-breaking edits, and adversarial character substitutions.</p>
+    <div class="tag-grid" style="margin-top: 8px;">
+      <span class="tag tag-blue"><span class="tag-dot"></span>Replace Word</span>
+      <span class="tag tag-blue"><span class="tag-dot"></span>Delete Word</span>
+      <span class="tag tag-blue"><span class="tag-dot"></span>Swap Words</span>
+      <span class="tag tag-blue"><span class="tag-dot"></span>Homophone</span>
+      <span class="tag tag-blue"><span class="tag-dot"></span>Slang</span>
+      <span class="tag tag-blue"><span class="tag-dot"></span>Pronoun Replace</span>
+      <span class="tag tag-amber"><span class="tag-dot"></span>Delete Char</span>
+      <span class="tag tag-amber"><span class="tag-dot"></span>Swap Chars</span>
+      <span class="tag tag-amber"><span class="tag-dot"></span>Double Char</span>
+      <span class="tag tag-amber"><span class="tag-dot"></span>Keyboard Char</span>
+      <span class="tag tag-amber"><span class="tag-dot"></span>Phonetic Replace</span>
+      <span class="tag tag-amber"><span class="tag-dot"></span>Insert Char</span>
+      <span class="tag tag-purple"><span class="tag-dot"></span>Cyrillic Substitution</span>
+      <span class="tag tag-gray"><span class="tag-dot"></span>Case Change</span>
+    </div>
+    <p style="margin-top:16px; font-size:0.875rem;">Evaluated at both <strong>constant intensity</strong> (exactly one operation per sentence) and <strong>variable intensity</strong> (1–5 operations per sentence) to test robustness under escalating corruption.</p>
+  </section>
+
+  <!-- ══ BIBTEX ══ -->
+  <section id="bibtex">
+    <div class="section-label">Citation</div>
+    <h2>BibTeX</h2>
+    <p>If you find this work useful, please cite:</p>
+    <div class="bibtex-box" id="bibtex-content">
+      <button class="copy-btn" id="copy-btn" onclick="copyBibtex()">copy</button>
+<span class="kw">@inproceedings</span>{cohen2026sdbn,<br>
+&nbsp;&nbsp;<span class="field">title</span>     = {<span class="val">Small Data, Big Noise: Adversarial Training for Robust Parameter-Efficient Fine-Tuning</span>},<br>
+&nbsp;&nbsp;<span class="field">author</span>    = {<span class="val">Cohen, Eitan and Simai, Idan and Shaham, Uri</span>},<br>
+&nbsp;&nbsp;<span class="field">booktitle</span> = {<span class="val">Findings of the Association for Computational Linguistics: ACL 2026</span>},<br>
+&nbsp;&nbsp;<span class="field">year</span>      = {<span class="val">2026</span>},<br>
+&nbsp;&nbsp;<span class="field">url</span>       = {<span class="val">https://arxiv.org/abs/2606.10610</span>}<br>
+}
+    </div>
+  </section>
+
+  <!-- ══ LINKS ══ -->
+  <section>
+    <div class="section-label">Resources</div>
+    <h2>Paper &amp; Code</h2>
+    <div class="cta-row">
+      <a href="https://arxiv.org/abs/2606.10610" target="_blank" rel="noopener" class="btn btn-primary">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Read on arXiv
+      </a>
+      <a href="https://github.com/shaham-lab/SDBN" target="_blank" rel="noopener" class="btn btn-secondary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        View Code on GitHub
+      </a>
+    </div>
+  </section>
+
+  <footer>
+    <p>
+      Eitan Cohen &nbsp;·&nbsp; Idan Simai &nbsp;·&nbsp; Uri Shaham<br>
+      Bar-Ilan University &nbsp;·&nbsp; ACL Findings 2026<br>
+      <a href="https://arxiv.org/abs/2606.10610">arxiv.org/abs/2606.10610</a>
+    </p>
+  </footer>
+
+</div>
+
+<script>
+function copyBibtex() {
+  const raw = `@inproceedings{cohen2026sdbn,
+  title     = {Small Data, Big Noise: Adversarial Training for Robust Parameter-Efficient Fine-Tuning},
+  author    = {Cohen, Eitan and Simai, Idan and Shaham, Uri},
+  booktitle = {Findings of the Association for Computational Linguistics: ACL 2026},
+  year      = {2026},
+  url       = {https://arxiv.org/abs/2606.10610}
+}`;
+  navigator.clipboard.writeText(raw).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+</script>
+</body>
+</html>
