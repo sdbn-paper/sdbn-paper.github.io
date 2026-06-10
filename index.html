@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Small Data, Big Noise — ACL Findings 2026</title>
+  <title>Small Data, Big Noise - ACL Findings 2026</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@300;400;500;600&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet"/>
@@ -84,25 +84,30 @@
     .venue-badge {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      background: rgba(79,127,255,0.1);
-      border: 1px solid rgba(79,127,255,0.25);
-      border-radius: 4px;
-      padding: 5px 14px;
+      gap: 18px;
+      background: linear-gradient(135deg, rgba(79,127,255,0.28) 0%, rgba(192,132,252,0.18) 100%);
+      border: 2.5px solid rgba(79,127,255,0.7);
+      border-radius: 16px;
+      padding: 22px 48px;
       font-family: 'IBM Plex Mono', monospace;
-      font-size: 12px;
-      color: var(--accent);
+      font-size: clamp(2rem, 4.5vw, 3.2rem);
+      font-weight: 800;
+      color: #d0e4ff;
+      white-space: nowrap;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      margin-bottom: 28px;
+      margin-bottom: 40px;
+      box-shadow: 0 0 60px rgba(79,127,255,0.35), 0 0 120px rgba(79,127,255,0.15), inset 0 1px 0 rgba(255,255,255,0.1);
     }
     .venue-badge::before {
       content: '';
       display: inline-block;
-      width: 6px; height: 6px;
+      width: 14px; height: 14px;
       border-radius: 50%;
       background: var(--accent);
+      box-shadow: 0 0 16px var(--accent), 0 0 32px var(--accent);
       animation: pulse 2s ease-in-out infinite;
+      flex-shrink: 0;
     }
     @keyframes pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
@@ -487,9 +492,9 @@
   <header>
     <div class="hero-bg"></div>
     <div class="hero-bg-2"></div>
-    <div class="venue-badge">ACL Findings 2026</div>
-    <h1>Small Data, <em>Big Noise</em>:<br>Adversarial Training for Robust<br>Parameter-Efficient Fine-Tuning</h1>
-    <p class="subtitle">A unified framework that brings adversarial training to PEFT — improving robustness to word-level, character-level, and domain-shift perturbations under low-resource conditions.</p>
+    <div class="venue-badge">🏆&nbsp; ACL Findings 2026</div>
+    <h1>Small Data, Big Noise:<br>Adversarial Training for Robust<br>Parameter-Efficient Fine-Tuning</h1>
+    <p class="subtitle">A unified framework that brings adversarial training to PEFT - improving robustness to word-level, character-level, and domain-shift perturbations under low-resource conditions.</p>
 
     <div class="authors">
       <div class="author-line">
@@ -524,7 +529,7 @@
   <section>
     <div class="section-label">Abstract</div>
     <div class="abstract-box">
-      Parameter-Efficient Fine-Tuning (PEFT) has become essential for adapting foundation models to downstream NLP tasks. However, current PEFT methods often struggle with robustness to noise and performance degradation on limited training data. We propose <strong>SDBN (Small Data Big Noise)</strong>, a unified framework that brings adversarial training to PEFT — a combination that remains less studied in the PEFT setting despite its complementary strengths — to enhance model robustness and generalization, outperforming alternative approaches. We also introduce two variants of the method that use discrete uncertainty sets: <strong>SDBN-h</strong>, which enumerates character-level edits and selects worst-case variants using gradients, and <strong>SDBN-p</strong>, which uses LLM-generated variants for robust optimization in generative tasks. Experiments across multiple benchmarks reveal substantial improvements, particularly in low-resource settings and under both word-level and character-level corruptions. This framework addresses the less explored intersection of adversarial training and parameter-efficient adaptation, without introducing additional parameters or only modest computational overhead, making PEFT deployments more reliable in real-world scenarios where data scarcity and linguistic variability often coexist.
+      Parameter-Efficient Fine-Tuning (PEFT) has become essential for adapting foundation models to downstream NLP tasks. However, current PEFT methods often struggle with robustness to noise and performance degradation on limited training data. We propose <strong>SDBN (Small Data Big Noise)</strong>, a unified framework that brings adversarial training to PEFT - a combination that remains less studied in the PEFT setting despite its complementary strengths - to enhance model robustness and generalization, outperforming alternative approaches. We also introduce two variants of the method that use discrete uncertainty sets: <strong>SDBN-h</strong>, which enumerates character-level edits and selects worst-case variants using gradients, and <strong>SDBN-p</strong>, which uses LLM-generated variants for robust optimization in generative tasks. Experiments across multiple benchmarks reveal substantial improvements, particularly in low-resource settings and under both word-level and character-level corruptions. This framework addresses the less explored intersection of adversarial training and parameter-efficient adaptation, without introducing additional parameters or only modest computational overhead, making PEFT deployments more reliable in real-world scenarios where data scarcity and linguistic variability often coexist.
     </div>
   </section>
 
@@ -544,14 +549,14 @@
   <section>
     <div class="section-label">Method</div>
     <h2>The SDBN Framework</h2>
-    <p>SDBN integrates adversarial training into the PEFT fine-tuning loop by injecting worst-case embedding-space perturbations — forcing adapter parameters to learn locally smooth representations that generalize under noise and domain shift, even when clean training data is scarce.</p>
+    <p>SDBN integrates adversarial training into the PEFT fine-tuning loop by injecting worst-case embedding-space perturbations - forcing adapter parameters to learn locally smooth representations that generalize under noise and domain shift, even when clean training data is scarce.</p>
 
     <div class="method-visual">
       <div class="method-step">
         <div class="step-num">1</div>
         <div>
           <div class="step-title">Freeze backbone, initialize PEFT adapter</div>
-          <div class="step-desc">The pretrained backbone (BERT, DeBERTa, LLaMA, Qwen) is frozen. Only the PEFT adapter parameters — LoRA, BitFit, Adapter, or QLoRA — are trainable.</div>
+          <div class="step-desc">The pretrained backbone (BERT, DeBERTa, LLaMA, Qwen) is frozen. Only the PEFT adapter parameters - LoRA, BitFit, Adapter, or QLoRA - are trainable.</div>
         </div>
       </div>
       <div class="step-arrow">↓</div>
@@ -632,7 +637,7 @@
   <section>
     <div class="section-label">Benchmarks</div>
     <h2>All evaluated datasets</h2>
-    <p>Seven benchmarks spanning classification, generative QA, semantic relations, and cross-domain generalization — evaluated under clean, word-level, and character-level noise conditions across 5%–100% of training data.</p>
+    <p>Seven benchmarks spanning classification, generative QA, semantic relations, and cross-domain generalization - evaluated under clean, word-level, and character-level noise conditions across 5%-100% of training data.</p>
 
     <div class="bench-grid">
       <div class="bench-card">
@@ -643,7 +648,7 @@
       <div class="bench-card">
         <div class="bench-name">TREC</div>
         <span class="bench-task bench-task-cls">Classification</span>
-        <p class="bench-desc">Question-type classification. Evaluated with BERT-base across 5%–100% training data to measure gains as data shrinks.</p>
+        <p class="bench-desc">Question-type classification. Evaluated with BERT-base across 5%-100% training data to measure gains as data shrinks.</p>
       </div>
       <div class="bench-card">
         <div class="bench-name">20NewsGroups</div>
@@ -653,7 +658,7 @@
       <div class="bench-card">
         <div class="bench-name">IMDB</div>
         <span class="bench-task bench-task-cls">Classification</span>
-        <p class="bench-desc">Sentiment classification. Evaluated with BERT-base across all data scales (5%–100%).</p>
+        <p class="bench-desc">Sentiment classification. Evaluated with BERT-base across all data scales (5%-100%).</p>
       </div>
       <div class="bench-card">
         <div class="bench-name">BLESS</div>
@@ -663,7 +668,7 @@
       <div class="bench-card">
         <div class="bench-name">SQuAD</div>
         <span class="bench-task bench-task-gen">Generative QA</span>
-        <p class="bench-desc">Extractive QA evaluated with LLaMA-3.2-1B (EM/F1) and Qwen-2.5-7B. 200–500 training samples. Primary benchmark for SDBN-p.</p>
+        <p class="bench-desc">Extractive QA evaluated with LLaMA-3.2-1B (EM/F1) and Qwen-2.5-7B. 200-500 training samples. Primary benchmark for SDBN-p.</p>
       </div>
       <div class="bench-card">
         <div class="bench-name">TweetQA</div>
@@ -691,7 +696,7 @@
 
     <!-- Table 2: Generative -->
     <div class="result-block">
-      <h3>Table 2 — Generative tasks (SDBN-p)</h3>
+      <h3>Table 2 - Generative tasks (SDBN-p)</h3>
       <p style="font-size:0.84rem; margin-bottom:14px;">Top: SQuAD Exact Match, LLaMA-3.2-1B + LoRA, 200 samples. Bottom: TweetQA F1, LLaMA-2-7B + LoRA, 200 samples.</p>
       <table class="result-table">
         <thead>
@@ -724,8 +729,8 @@
 
     <!-- Table 1: BLESS char noise -->
     <div class="result-block">
-      <h3>Table 1 — BLESS: character-level noise (SDBN-h)</h3>
-      <p style="font-size:0.84rem; margin-bottom:14px;">DeBERTa-v3 + LoRA, 1,000 clean samples. SDBN-h yields best robustness on tokenization-breaking types (+4–7%).</p>
+      <h3>Table 1 - BLESS: character-level noise (SDBN-h)</h3>
+      <p style="font-size:0.84rem; margin-bottom:14px;">DeBERTa-v3 + LoRA, 1,000 clean samples. SDBN-h yields best robustness on tokenization-breaking types (+4-7%).</p>
       <table class="result-table">
         <thead>
           <tr><th>Method</th><th>Clean</th><th>Delete-Char</th><th>Swap-Char</th><th>Double-Char</th></tr>
@@ -741,7 +746,7 @@
 
     <!-- Table 3: PEFT vs full FT -->
     <div class="result-block">
-      <h3>Table 3 — SDBN gains: PEFT vs. full fine-tuning (Banking77, DeBERTa-v3)</h3>
+      <h3>Table 3 - SDBN gains: PEFT vs. full fine-tuning (Banking77, DeBERTa-v3)</h3>
       <p style="font-size:0.84rem; margin-bottom:14px;">Absolute accuracy gain (pp) from adding SDBN. Low-resource subset. Adversarial training is dramatically more effective within PEFT's constrained parameter space.</p>
       <table class="result-table">
         <thead>
@@ -758,7 +763,7 @@
 
     <!-- Table 7 summary: clean data across datasets -->
     <div class="result-block">
-      <h3>Table 7 — Clean-data accuracy across datasets (BERT-base, 10% training data)</h3>
+      <h3>Table 7 - Clean-data accuracy across datasets (BERT-base, 10% training data)</h3>
       <p style="font-size:0.84rem; margin-bottom:14px;">Excerpt at the most challenging (10%) data regime. SDBN improves every PEFT method on every dataset.</p>
       <table class="result-table">
         <thead>
@@ -777,19 +782,19 @@
 
     <!-- Domain shifts -->
     <div class="result-block">
-      <h3>Domain shift — ArSarcasm-v2 &amp; NLI cross-genre</h3>
+      <h3>Domain shift - ArSarcasm-v2 &amp; NLI cross-genre</h3>
       <p style="font-size:0.84rem; margin-bottom:14px;">Cross-domain generalization without any target-domain training data.</p>
       <table class="result-table">
         <thead>
           <tr><th>Setting</th><th>Vanilla</th><th>NEFTune</th><th>SDBN</th></tr>
         </thead>
         <tbody>
-          <tr><td>ArSarcasm — Egyptian (source)</td><td>55.2</td><td>56.3</td><td class="best">59.6</td></tr>
-          <tr><td>ArSarcasm — Levantine (target)</td><td>44.6</td><td>44.9</td><td class="best">57.1</td></tr>
-          <tr><td>ArSarcasm — Gulf (target)</td><td>44.6</td><td>44.9</td><td class="best">47.2</td></tr>
-          <tr><td>ArSarcasm — Modern Standard (target)</td><td>54.1</td><td>54.4</td><td class="best">57.8</td></tr>
-          <tr><td>NLI — Fiction (source)</td><td>51.8</td><td>55.0</td><td class="best">58.9</td></tr>
-          <tr><td>NLI — Telephone (target)</td><td>48.7</td><td>54.6</td><td class="best">51.0</td></tr>
+          <tr><td>ArSarcasm - Egyptian (source)</td><td>55.2</td><td>56.3</td><td class="best">59.6</td></tr>
+          <tr><td>ArSarcasm - Levantine (target)</td><td>44.6</td><td>44.9</td><td class="best">57.1</td></tr>
+          <tr><td>ArSarcasm - Gulf (target)</td><td>44.6</td><td>44.9</td><td class="best">47.2</td></tr>
+          <tr><td>ArSarcasm - Modern Standard (target)</td><td>54.1</td><td>54.4</td><td class="best">57.8</td></tr>
+          <tr><td>NLI - Fiction (source)</td><td>51.8</td><td>55.0</td><td class="best">58.9</td></tr>
+          <tr><td>NLI - Telephone (target)</td><td>48.7</td><td>54.6</td><td class="best">51.0</td></tr>
         </tbody>
       </table>
     </div>
@@ -817,7 +822,7 @@
       <span class="tag tag-purple"><span class="tag-dot"></span>Cyrillic Substitution</span>
       <span class="tag tag-gray"><span class="tag-dot"></span>Case Change</span>
     </div>
-    <p style="margin-top:16px; font-size:0.875rem;">Evaluated at both <strong>constant intensity</strong> (exactly one operation per sentence) and <strong>variable intensity</strong> (1–5 operations per sentence) to test robustness under escalating corruption.</p>
+    <p style="margin-top:16px; font-size:0.875rem;">Evaluated at both <strong>constant intensity</strong> (exactly one operation per sentence) and <strong>variable intensity</strong> (1-5 operations per sentence) to test robustness under escalating corruption.</p>
   </section>
 
   <!-- ══ BIBTEX ══ -->
